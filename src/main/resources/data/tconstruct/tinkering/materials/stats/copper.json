@@ -1,6 +1,15 @@
 {
   "stats": {
-    "tc_t:wand_rod": {},
-    "tc_t:wand_cap": {}
+    "tc_t:wand_rod": {
+      "capacity": 30
+    },
+    "tc_t:wand_cap": {
+      "vis_cost": 1.1,
+      "special_aspects": [
+        "ordo",
+        "perditio"
+      ],
+      "special_cost": 1.0
+    }
   }
 }

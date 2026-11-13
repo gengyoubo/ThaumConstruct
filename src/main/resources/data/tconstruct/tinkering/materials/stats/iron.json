@@ -1,6 +1,10 @@
 {
   "stats": {
-    "tc_t:wand_rod": {},
-    "tc_t:wand_cap": {}
+    "tc_t:wand_rod": {
+      "capacity": 35
+    },
+    "tc_t:wand_cap": {
+      "vis_cost": 1.1
+    }
   }
 }

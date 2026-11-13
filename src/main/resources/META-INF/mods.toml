@@ -8,6 +8,12 @@ displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
 [[dependencies.${mod_id}]]
+    modId="mfcl"
+    mandatory=true
+    versionRange="[1.1.3,)"
+    ordering="AFTER"
+    side="BOTH"
+[[dependencies.${mod_id}]]
     modId="forge"
     mandatory=true
     versionRange="${forge_version_range}"

@@ -1,7 +1,9 @@
 package github.com.gengyoubo.TCt;
 
 import github.com.gengyoubo.TCt.item.TCtItems;
-import github.com.gengyoubo.TCt.stats.WandPartStats;
+import github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge;
+import github.com.gengyoubo.TCt.stats.WandStatTypes;
+import github.com.gengyoubo.TCt.stats.WandToolStats;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -10,16 +12,19 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(TCt.MOD_ID)
 public class TCt {
+    //神秘工匠
     public static final String MOD_ID = "tc_t";
 
     public TCt() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        WandToolStats.init();
+        Tc4WandBridge.registerAdapter();
         TCtItems.register(modBus);
         modBus.addListener(TCt::commonSetup);
     }
 
     private static void commonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(WandPartStats::registerStatTypes);
+        event.enqueueWork(WandStatTypes::register);
     }
 
     public static ResourceLocation getResource(String path) {

@@ -1,5 +1,7 @@
 {
   "stats": {
-    "tc_t:wand_rod": {}
+    "tc_t:wand_rod": {
+      "capacity": 20
+    }
   }
 }
