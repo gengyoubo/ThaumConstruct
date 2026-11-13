@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "tc_t:item/sand_cast/wand_rod"
+  }
+}

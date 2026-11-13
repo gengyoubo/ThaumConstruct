@@ -1,0 +1,16 @@
+{
+  "item.tc_t.wand": "Wand",
+  "item.tc_t.wand.description": "A wand channels vis for the thaumaturge.\nPlace a rod in the middle and a cap on each end.",
+  "item.tc_t.wand_rod": "Wand Rod",
+  "item.tc_t.wand_cap": "Wand Cap",
+  "item.tc_t.wand_rod_cast": "Wand Rod Gold Cast",
+  "item.tc_t.wand_rod_sand_cast": "Wand Rod Sand Cast",
+  "item.tc_t.wand_rod_red_sand_cast": "Wand Rod Red Sand Cast",
+  "item.tc_t.wand_cap_cast": "Wand Cap Gold Cast",
+  "item.tc_t.wand_cap_sand_cast": "Wand Cap Sand Cast",
+  "item.tc_t.wand_cap_red_sand_cast": "Wand Cap Red Sand Cast",
+  "pattern.tc_t.wand_rod": "Wand Rod",
+  "pattern.tc_t.wand_cap": "Wand Cap",
+  "stat.tc_t.wand_rod": "Wand Rod",
+  "stat.tc_t.wand_cap": "Wand Cap"
+}

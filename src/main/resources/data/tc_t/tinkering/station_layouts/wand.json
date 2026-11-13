@@ -1,0 +1,36 @@
+{
+  "icon": {
+    "pattern": "tc_t:wand"
+  },
+  "input_slots": [
+    {
+      "icon": "tc_t:wand_rod",
+      "translation_key": "item.tc_t.wand_rod",
+      "x": 33,
+      "y": 42,
+      "filter": {
+        "item": "tc_t:wand_rod"
+      }
+    },
+    {
+      "icon": "tc_t:wand_cap",
+      "translation_key": "item.tc_t.wand_cap",
+      "x": 53,
+      "y": 22,
+      "filter": {
+        "item": "tc_t:wand_cap"
+      }
+    },
+    {
+      "icon": "tc_t:wand_cap",
+      "translation_key": "item.tc_t.wand_cap",
+      "x": 13,
+      "y": 62,
+      "filter": {
+        "item": "tc_t:wand_cap"
+      }
+    }
+  ],
+  "sortIndex": 100,
+  "translation_key": "item.tc_t.wand"
+}

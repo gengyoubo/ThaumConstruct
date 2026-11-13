@@ -1,0 +1,16 @@
+{
+  "type": "tconstruct:part_builder",
+  "cost": 1,
+  "pattern": "tc_t:wand_cap",
+  "pattern_item": [
+    {
+      "tag": "tconstruct:patterns/default"
+    },
+    {
+      "item": "tc_t:wand_cap_cast"
+    }
+  ],
+  "result": {
+    "item": "tc_t:wand_cap"
+  }
+}

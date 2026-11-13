@@ -1,0 +1,8 @@
+{
+  "type": "tconstruct:table_casting_material",
+  "cast": {
+    "tag": "tc_t:casts/multi_use/wand_cap"
+  },
+  "item_cost": 1,
+  "result": "tc_t:wand_cap"
+}

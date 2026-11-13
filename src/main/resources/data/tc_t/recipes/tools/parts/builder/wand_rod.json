@@ -1,0 +1,16 @@
+{
+  "type": "tconstruct:part_builder",
+  "cost": 2,
+  "pattern": "tc_t:wand_rod",
+  "pattern_item": [
+    {
+      "tag": "tconstruct:patterns/default"
+    },
+    {
+      "item": "tc_t:wand_rod_cast"
+    }
+  ],
+  "result": {
+    "item": "tc_t:wand_rod"
+  }
+}

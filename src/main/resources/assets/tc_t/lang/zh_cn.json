@@ -1,0 +1,16 @@
+{
+  "item.tc_t.wand": "法杖",
+  "item.tc_t.wand.description": "法杖是施法者引导源质的媒介。\n中间放置杖柄，两端各放置一个杖端。",
+  "item.tc_t.wand_rod": "杖柄",
+  "item.tc_t.wand_cap": "杖端",
+  "item.tc_t.wand_rod_cast": "杖柄金铸模",
+  "item.tc_t.wand_rod_sand_cast": "杖柄沙铸模",
+  "item.tc_t.wand_rod_red_sand_cast": "杖柄红沙铸模",
+  "item.tc_t.wand_cap_cast": "杖端金铸模",
+  "item.tc_t.wand_cap_sand_cast": "杖端沙铸模",
+  "item.tc_t.wand_cap_red_sand_cast": "杖端红沙铸模",
+  "pattern.tc_t.wand_rod": "杖柄",
+  "pattern.tc_t.wand_cap": "杖端",
+  "stat.tc_t.wand_rod": "杖柄",
+  "stat.tc_t.wand_cap": "杖端"
+}

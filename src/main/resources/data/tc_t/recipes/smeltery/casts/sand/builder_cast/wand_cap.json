@@ -1,0 +1,9 @@
+{
+  "type": "tconstruct:item_part_builder",
+  "pattern": "tc_t:wand_cap",
+  "pattern_item": {
+    "tag": "tconstruct:casts/sand"
+  },
+  "result": "tc_t:wand_cap_sand_cast",
+  "title_key": "tconstruct:sand_cast"
+}

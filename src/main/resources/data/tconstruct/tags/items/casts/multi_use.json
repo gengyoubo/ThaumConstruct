@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#tc_t:casts/multi_use/wand_rod",
+    "#tc_t:casts/multi_use/wand_cap"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "forge:item/default",
+  "loader": "tconstruct:material",
+  "textures": {
+    "texture": "tc_t:item/tool/parts/wand_cap"
+  }
+}
