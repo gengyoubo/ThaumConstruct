@@ -37,6 +37,12 @@ public final class ArcaneAnvilBlockEntity extends TinkerStationBlockEntity {
     @Override public void load(CompoundTag tag) {
         super.load(tag);
         wand.setItem(0, tag.contains("ArcaneWand", 10) ? ItemStack.of(tag.getCompound("ArcaneWand")) : ItemStack.EMPTY);
+        if (level != null && level.isClientSide) {
+            // The texture arrives after the replacement block; rebuild its cached model data.
+            requestModelDataUpdate();
+            var state = getBlockState();
+            level.sendBlockUpdated(worldPosition, state, state, 0);
+        }
     }
 
     // Base cost per primal aspect, before the crafting wand and equipment modifiers.

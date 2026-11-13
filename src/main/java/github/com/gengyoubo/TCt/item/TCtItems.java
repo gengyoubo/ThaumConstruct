@@ -1,12 +1,18 @@
 package github.com.gengyoubo.TCt.item;
 
 import github.com.gengyoubo.TCt.TCt;
+import github.com.gengyoubo.TCt.arcane.ArcaneAnvil;
 import github.com.gengyoubo.TCt.stats.WandCapStats;
 import github.com.gengyoubo.TCt.stats.WandRodStats;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.RegistryObject;
 import slimeknights.mantle.registration.object.ItemObject;
 import slimeknights.tconstruct.common.registration.CastItemObject;
 import slimeknights.tconstruct.common.registration.ItemDeferredRegisterExtension;
@@ -23,6 +29,8 @@ public final class TCtItems {
     private TCtItems() {}
 
     public static final ItemDeferredRegisterExtension ITEMS = new ItemDeferredRegisterExtension(TCt.MOD_ID);
+    private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TCt.MOD_ID);
+
 
     /** 杖柄 */
     public static final ItemObject<ToolPartItem> WAND_ROD =
@@ -53,8 +61,28 @@ public final class TCtItems {
     public static final ItemObject<WandItem> STAFF = ITEMS.register("staff",
             () -> new WandItem(new Item.Properties().stacksTo(1), STAFF_DEFINITION, WandItem.Kind.STAFF));
 
+    public static final RegistryObject<CreativeModeTab> TAB = TABS.register("thaumconstruct", () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.tc_t.thaumconstruct"))
+            .icon(() -> new ItemStack(WAND.get()))
+            .displayItems((parameters, output) -> {
+                Consumer<ItemStack> accept = output::accept;
+                ArcaneAnvil.ITEM.get().addVariants(accept, "");
+                ToolBuildHandler.addVariants(accept, WAND.get(), "");
+                ToolBuildHandler.addVariants(accept, SCEPTRE.get(), "");
+                ToolBuildHandler.addVariants(accept, STAFF.get(), "");
+                WAND_ROD.get().addVariants(accept, "");
+                STAFF_ROD.get().addVariants(accept, "");
+                WAND_CAP.get().addVariants(accept, "");
+                for (CastItemObject cast : new CastItemObject[]{WAND_ROD_CAST, STAFF_ROD_CAST, WAND_CAP_CAST}) {
+                    output.accept(cast.get());
+                    output.accept(cast.getSand());
+                    output.accept(cast.getRedSand());
+                }
+            }).build());
+
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
+        TABS.register(modBus);
         modBus.addListener(TCtItems::addCreativeTabItems);
     }
 

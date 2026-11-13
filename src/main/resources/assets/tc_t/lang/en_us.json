@@ -1,6 +1,11 @@
 {
+  "itemGroup.tc_t.thaumconstruct": "Thaumconstruct",
   "item.tc_t.wand": "Wand",
   "block.tc_t.arcane_anvil": "Arcane Tinker's Anvil",
+  "jei.tc_t.anvil_conversion.title": "Wand Interaction",
+  "jei.tc_t.anvil_conversion.click": "Shift + Right-click",
+  "jei.tc_t.anvil_conversion.material": "Keeps anvil material and items",
+  "jei.tc_t.anvil_conversion.wand": "The wand is not consumed",
   "message.tc_t.arcane_anvil.converted": "The Tinker's Anvil has become an Arcane Tinker's Anvil",
   "gui.tc_t.arcane_anvil.vis": "Base Vis",
   "gui.tc_t.arcane_anvil.wand_slot": "Insert a wand to supply Vis",
@@ -66,5 +71,10 @@
   "message.tc_t.staff_rod.need_charm": "Apply a primal charm first",
   "message.tc_t.staff_rod.need_wand": "A normal wand is required",
   "message.tc_t.staff_rod.insufficient": "Insufficient Order vis; base cost: %s",
-  "message.tc_t.staff_rod.finished": "Staff core completed"
+  "message.tc_t.staff_rod.finished": "Staff core completed",
+  "jei.tc_t.staff_rod.title": "Staff Core Awakening",
+  "jei.tc_t.staff_rod.step1": "1. Use charm on casting table",
+  "jei.tc_t.staff_rod.step2": "2. Use wand on casting table",
+  "jei.tc_t.staff_rod.cost": "Base cost: %s Order Vis",
+  "jei.tc_t.staff_rod.wand": "Any normal wand; not consumed"
 }

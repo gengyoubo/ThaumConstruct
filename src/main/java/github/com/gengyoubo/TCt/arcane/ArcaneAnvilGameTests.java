@@ -2,6 +2,7 @@ package github.com.gengyoubo.TCt.arcane;
 
 import github.com.gengyoubo.TCt.TCt;
 import github.com.gengyoubo.TCt.compat.tc4.ArcaneVis;
+import github.com.gengyoubo.tcmodern.api.wand.TcWandVis;
 import github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge;
 import github.com.gengyoubo.TCt.item.WandItem;
 import github.com.gengyoubo.TCt.item.TCtItems;
@@ -43,6 +44,63 @@ import java.util.EnumMap;
 @PrefixGameTestTemplate(false)
 public final class ArcaneAnvilGameTests {
     private ArcaneAnvilGameTests() { }
+
+    @github.com.gengyoubo.mfcl.api.mla.LegacyType("thaumcraft.common.items.wands.ItemWandCasting")
+    public interface WandRenderAccess {
+        @github.com.gengyoubo.mfcl.api.mla.LegacyMethod(name = "getRod", descriptor = "(Lnet/minecraft/item/ItemStack;)Lthaumcraft/api/wands/WandRod;")
+        github.com.gengyoubo.mfcl.api.LegacyObject rod(github.com.gengyoubo.mfcl.api.LegacyObject stack);
+        @github.com.gengyoubo.mfcl.api.mla.LegacyMethod(name = "getCap", descriptor = "(Lnet/minecraft/item/ItemStack;)Lthaumcraft/api/wands/WandCap;")
+        github.com.gengyoubo.mfcl.api.LegacyObject cap(github.com.gengyoubo.mfcl.api.LegacyObject stack);
+    }
+    @github.com.gengyoubo.mfcl.api.mla.LegacyType("thaumcraft.api.wands.WandRod")
+    public interface RodRenderAccess {
+        @github.com.gengyoubo.mfcl.api.mla.LegacyMethod(name = "getTexture", descriptor = "()Lnet/minecraft/util/ResourceLocation;")
+        github.com.gengyoubo.mfcl.api.LegacyObject texture();
+    }
+    @github.com.gengyoubo.mfcl.api.mla.LegacyType("thaumcraft.api.wands.WandCap")
+    public interface CapRenderAccess {
+        @github.com.gengyoubo.mfcl.api.mla.LegacyMethod(name = "getTexture", descriptor = "()Lnet/minecraft/util/ResourceLocation;")
+        github.com.gengyoubo.mfcl.api.LegacyObject texture();
+    }
+    @github.com.gengyoubo.mfcl.api.mla.LegacyType("net.minecraft.util.ResourceLocation")
+    public interface TextureAccess {
+        @github.com.gengyoubo.mfcl.api.mla.LegacyMethod(name = "func_110623_a", descriptor = "()Ljava/lang/String;") String path();
+        @github.com.gengyoubo.mfcl.api.mla.LegacyMethod(name = "func_110624_b", descriptor = "()Ljava/lang/String;") String namespace();
+    }
+
+    @GameTest(template = "arcane_test", templateNamespace = TCt.MOD_ID)
+    public static void wandConvertsLegacyTable(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var runtime = MfclApi.runtime().orElseThrow();
+        var pos = helper.absolutePos(new BlockPos(0, 1, 0));
+        var table = runtime.hostBlock("Thaumcraft:blockTable", 0, net.minecraft.world.level.block.state.BlockState.class).orElseThrow();
+        level.setBlockAndUpdate(pos, table);
+        var rock = MaterialVariant.of((MaterialVariantId) new MaterialId("tconstruct:rock"));
+        var gold = MaterialVariant.of((MaterialVariantId) new MaterialId("tconstruct:gold"));
+        var iron = MaterialVariant.of((MaterialVariantId) new MaterialId("tconstruct:iron"));
+        var wand = ToolBuildHandler.buildItemFromMaterials(TCtItems.WAND.get(), MaterialNBT.of(rock, gold, iron));
+        var before = wand.copy();
+        var host = Tc4WandBridge.toHost(wand);
+        var old = runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, host).orElseThrow();
+        var item = runtime.accessor(TcWandVis.Stack.class, old).item();
+        var renderer = runtime.accessor(WandRenderAccess.class, item);
+        var rodTexture = runtime.accessor(TextureAccess.class, runtime.accessor(RodRenderAccess.class, renderer.rod(old)).texture());
+        var capTexture = runtime.accessor(TextureAccess.class, runtime.accessor(CapRenderAccess.class, renderer.cap(old)).texture());
+        if (!"tc_t".equals(rodTexture.namespace()) || !rodTexture.path().endsWith("rod_tconstruct_rock.png")
+                || !"thaumcraft".equals(capTexture.namespace()) || !capTexture.path().endsWith("wand_cap_gold.png"))
+            throw new AssertionError("Legacy wand renderer received incorrect textures");
+        var player = FakePlayerFactory.getMinecraft(level);
+        player.setItemInHand(InteractionHand.MAIN_HAND, wand);
+        var hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
+        var result = player.gameMode.useItemOn(player, level, wand, InteractionHand.MAIN_HAND, hit);
+        if (!result.consumesAction() || !player.getMainHandItem().isEmpty())
+            throw new AssertionError("Workbench conversion did not transfer the wand exactly once: " + result);
+        var tile = level.getBlockEntity(pos);
+        var stored = tile.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER).resolve().orElseThrow().getStackInSlot(10);
+        if (!stored.is(TCtItems.WAND.get()) || !ToolStack.from(stored).getMaterials().equals(ToolStack.from(before).getMaterials()))
+            throw new AssertionError("Workbench did not restore the original Tinkers wand: " + stored);
+        helper.succeed();
+    }
 
     @GameTest(template = "arcane_test", templateNamespace = TCt.MOD_ID)
     public static void persistenceAndCost(GameTestHelper helper) {
@@ -100,6 +158,8 @@ public final class ArcaneAnvilGameTests {
 
     @GameTest(template = "arcane_test", templateNamespace = TCt.MOD_ID)
     public static void materialAffinitiesAndMigration(GameTestHelper helper) {
+        if (!github.com.gengyoubo.tcmodern.api.wand.TcWandCapacities.prefixes().contains(Tc4WandBridge.CAPACITY_PREFIX))
+            throw new AssertionError("TC Modern Lib did not register the saved TCt capacity prefix");
         var iron = MaterialVariant.of((MaterialVariantId) new MaterialId("tconstruct:iron"));
         var cobalt = MaterialVariant.of((MaterialVariantId) new MaterialId("tconstruct:cobalt"));
         var fire = MaterialVariant.of((MaterialVariantId) new MaterialId("tconstruct:blazing_bone"));
@@ -148,6 +208,12 @@ public final class ArcaneAnvilGameTests {
         var costs = new EnumMap<Aspect, Integer>(Aspect.class);
         for (Aspect aspect : Aspect.values()) costs.put(aspect, 1000);
         ItemStack paid = ArcaneVis.pay(FakePlayerFactory.getMinecraft(helper.getLevel()), host, costs, false).orElseThrow();
+        top.setHoverName(net.minecraft.network.chat.Component.literal("Preserved wand"));
+        ItemStack paidNative = ArcaneVis.pay(FakePlayerFactory.getMinecraft(helper.getLevel()), top, costs, false).orElseThrow();
+        if (!paidNative.is(TCtItems.WAND.get()) || !paidNative.hasCustomHoverName()
+                || WandItem.toolWithAspectStats(paidNative).getPersistentData().getInt(WandItem.visKey(Aspect.AER)) != 4350
+                || WandItem.toolWithAspectStats(top).getPersistentData().getInt(WandItem.visKey(Aspect.AER)) != 5000)
+            throw new AssertionError("TC Modern Lib payment lost native wand data or mutated the original");
         var runtime = MfclApi.runtime().orElseThrow();
         var old = runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, paid).orElseThrow();
         var tag = runtime.accessor(Tc4WandBridge.OldTag.class, runtime.accessor(Tc4WandBridge.OldStack.class, old).tag());
@@ -262,8 +328,8 @@ public final class ArcaneAnvilGameTests {
         var output = menu.slots.stream().filter(slot -> slot instanceof LazyResultSlot).findFirst().orElseThrow();
         if (result.isEmpty() || output.mayPickup(player)) throw new AssertionError("Preview or empty-wand restriction failed");
         var runtime = MfclApi.runtime().orElseThrow();
-        runtime.accessor(Tc4WandBridge.WandRodFactory.class).create("tc_t_test_craft_250", 250,
-                runtime.stack(new LegacyStack("minecraft:stick", 0, 1, "")), 1);
+        github.com.gengyoubo.tcmodern.api.wand.TcWandPartRegistrar.rod(runtime, "tc_t_test_craft_250", 250,
+                new LegacyStack("minecraft:stick", 0, 1, ""), 1, false, null);
         var weak = runtime.stack(new LegacyStack("Thaumcraft:WandCasting", 0, 1,
                 "{rod:\"tc_t_test_craft_250\",cap:\"gold\",aer:17900,terra:17900,ignis:17900,aqua:17900,ordo:17900,perditio:17900}"));
         tile.wandSlot().setItem(0, runtime.mappings().toHost(LegacyMappings.ITEM_STACK, weak, ItemStack.class).orElseThrow());
@@ -324,8 +390,8 @@ public final class ArcaneAnvilGameTests {
         var runtime = MfclApi.runtime().orElseThrow();
         var oldStaff = runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, Tc4WandBridge.toHost(staff)).orElseThrow();
         var oldSceptre = runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, Tc4WandBridge.toHost(sceptre)).orElseThrow();
-        var staffItem = runtime.accessor(ArcaneVis.OldStack.class, oldStaff).item();
-        var sceptreItem = runtime.accessor(ArcaneVis.OldStack.class, oldSceptre).item();
+        var staffItem = runtime.accessor(TcWandVis.Stack.class, oldStaff).item();
+        var sceptreItem = runtime.accessor(TcWandVis.Stack.class, oldSceptre).item();
         if (!runtime.accessor(Tc4WandBridge.OldWand.class, staffItem).isStaff(oldStaff)
                 || !runtime.accessor(Tc4WandBridge.OldWand.class, sceptreItem).isSceptre(oldSceptre))
             throw new AssertionError("TC4 did not recognize staff/sceptre");
@@ -442,6 +508,13 @@ public final class ArcaneAnvilGameTests {
             if (!early.isCanceled() || !table.getItem(slot).is(TCtItems.STAFF_ROD_BLANK.get()) || !ItemStack.matches(charged, player.getMainHandItem()))
                 throw new AssertionError("Wand was accepted before the charm");
             var charm = runtime.stack(new LegacyStack("Thaumcraft:ItemResource", 15, 1, ""));
+            var shownCharms = StaffRodCasting.displayCharms();
+            if (shownCharms.stream().noneMatch(shown -> StaffRodCasting.isCharm(shown)
+                    && runtime.snapshot(runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, shown).orElseThrow()).metadata() == 15))
+                throw new AssertionError("JEI does not display the real primal charm metadata");
+            var realCharm = runtime.mappings().toHost(LegacyMappings.ITEM_STACK, charm, ItemStack.class).orElseThrow();
+            if (StaffRodCasting.isCharm(new ItemStack(realCharm.getItem())))
+                throw new AssertionError("An MFCL charm stack without legacy metadata was accepted");
             player.setItemInHand(InteractionHand.MAIN_HAND, runtime.mappings().toHost(LegacyMappings.ITEM_STACK, charm, ItemStack.class).orElseThrow());
             var first = new PlayerInteractEvent.RightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit);
             MinecraftForge.EVENT_BUS.post(first);
@@ -522,6 +595,84 @@ public final class ArcaneAnvilGameTests {
         player.setShiftKeyDown(false);
         if (!event.isCanceled() || !(level.getBlockEntity(pos) instanceof ArcaneAnvilBlockEntity anvil)
                 || anvil.getItem(1).getCount() != 3 || !"minecraft:gold_block".equals(anvil.getTextureName())) throw new AssertionError("Conversion lost the original inventory or material");
+        var packet = anvil.getUpdatePacket();
+        if (packet == null || packet.getType() != ArcaneAnvil.TILE.get() || !"minecraft:gold_block".equals(packet.getTag().getString("texture")))
+            throw new AssertionError("Converted anvil did not send its material to the client");
+        var clientCopy = new ArcaneAnvilBlockEntity(pos, level.getBlockState(pos));
+        clientCopy.load(packet.getTag());
+        if (!"minecraft:gold_block".equals(clientCopy.getTextureName()))
+            throw new AssertionError("Converted material did not survive the client update");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arcane_test", templateNamespace = TCt.MOD_ID)
+    public static void creativeAnvilVariants(GameTestHelper helper) {
+        var original = new java.util.ArrayList<ItemStack>();
+        var arcane = new java.util.ArrayList<ItemStack>();
+        ((slimeknights.tconstruct.library.tools.part.IMaterialItem) TinkerTables.tinkersAnvil.asItem()).addVariants(original::add, "");
+        ArcaneAnvil.ITEM.get().addVariants(arcane::add, "");
+        if (original.isEmpty() || arcane.size() != original.size())
+            throw new AssertionError("Creative anvil variants differ from Tinkers: " + original.size() + " vs " + arcane.size());
+        var level = helper.getLevel();
+        var tab = TCtItems.TAB.get();
+        tab.buildContents(new net.minecraft.world.item.CreativeModeTab.ItemDisplayParameters(level.enabledFeatures(), true, level.registryAccess()));
+        if (tab.getDisplayItems().stream().filter(stack -> stack.is(ArcaneAnvil.ITEM.get())).count() != arcane.size())
+            throw new AssertionError("Creative tab is missing arcane anvil variants");
+        var conversionVariants = AnvilConversionVariants.all();
+        for (var block : java.util.List.of(TinkerTables.tinkersAnvil, TinkerTables.scorchedAnvil)) {
+            var originals = new java.util.ArrayList<ItemStack>();
+            ((slimeknights.tconstruct.library.tools.part.IMaterialItem) block.asItem()).addVariants(originals::add, "");
+            if (conversionVariants.stream().filter(variant -> variant.source().is(block.asItem())).count() != originals.size())
+                throw new AssertionError("JEI conversion is missing anvil materials: " + block.getId());
+            for (var input : originals) if (conversionVariants.stream().noneMatch(variant ->
+                    ItemStack.isSameItemSameTags(variant.source(), input)
+                    && variant.result().is(ArcaneAnvil.ITEM.get())
+                    && java.util.Objects.equals(input.getTag(), variant.result().getTag())))
+                throw new AssertionError("JEI conversion does not preserve material: " + input);
+        }
+        var pos = helper.absolutePos(new BlockPos(0, 1, 0));
+        for (int i = 0; i < original.size(); i++) {
+            var source = original.get(i);
+            var result = arcane.get(i);
+            if (!result.is(ArcaneAnvil.ITEM.get()) || !java.util.Objects.equals(source.getTag(), result.getTag()))
+                throw new AssertionError("Creative anvil variant lost its material: " + source);
+            level.setBlockAndUpdate(pos, TinkerTables.tinkersAnvil.get().defaultBlockState());
+            TinkerTables.tinkersAnvil.get().setPlacedBy(level, pos, level.getBlockState(pos), null, source);
+            var expected = (TinkerStationBlockEntity) level.getBlockEntity(pos);
+            var expectedTexture = expected.getTextureName();
+            var expectedMaterial = expected.getMaterial();
+            level.setBlockAndUpdate(pos, ArcaneAnvil.BLOCK.get().defaultBlockState());
+            ArcaneAnvil.BLOCK.get().setPlacedBy(level, pos, level.getBlockState(pos), null, result);
+            var placed = (ArcaneAnvilBlockEntity) level.getBlockEntity(pos);
+            if (!expectedTexture.equals(placed.getTextureName()) || !expectedMaterial.equals(placed.getMaterial()))
+                throw new AssertionError("Placed creative anvil lost its material: " + source);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arcane_test", templateNamespace = TCt.MOD_ID)
+    public static void wandConvertsScorchedAnvil(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var local = new BlockPos(0, 1, 0);
+        helper.setBlock(local, TinkerTables.scorchedAnvil.get());
+        var original = (TinkerStationBlockEntity) helper.getBlockEntity(local);
+        original.updateTexture("minecraft:diamond_block");
+        original.setItem(1, new ItemStack(Items.EMERALD, 2));
+        var runtime = MfclApi.runtime().orElseThrow();
+        var wand = runtime.stack(new LegacyStack("Thaumcraft:WandCasting", 0, 1, "{rod:\"wood\",cap:\"iron\"}"));
+        var player = FakePlayerFactory.getMinecraft(level);
+        player.setItemInHand(InteractionHand.MAIN_HAND, runtime.mappings().toHost(LegacyMappings.ITEM_STACK, wand, ItemStack.class).orElseThrow());
+        var pos = helper.absolutePos(local);
+        var hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
+        player.setShiftKeyDown(true);
+        var event = new PlayerInteractEvent.RightClickBlock(player, InteractionHand.MAIN_HAND, pos, hit);
+        MinecraftForge.EVENT_BUS.post(event);
+        player.setShiftKeyDown(false);
+        if (!event.isCanceled() || !(level.getBlockEntity(pos) instanceof ArcaneAnvilBlockEntity anvil)
+                || !"minecraft:diamond_block".equals(anvil.getTextureName()) || anvil.getItem(1).getCount() != 2)
+            throw new AssertionError("Scorched anvil conversion lost its material or inventory");
+        if (anvil.getUpdatePacket() == null || !"minecraft:diamond_block".equals(anvil.getUpdatePacket().getTag().getString("texture")))
+            throw new AssertionError("Scorched anvil material was not synced");
         helper.succeed();
     }
 

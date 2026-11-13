@@ -6,6 +6,7 @@ import github.com.gengyoubo.TCt.arcane.ArcaneAnvilConfig;
 import github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge;
 import github.com.gengyoubo.TCt.stats.WandStatTypes;
 import github.com.gengyoubo.TCt.stats.WandToolStats;
+import github.com.gengyoubo.tcmodern.api.wand.TcWandCapacities;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -22,6 +23,7 @@ public class TCt {
     public TCt() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         WandToolStats.init();
+        TcWandCapacities.registerPrefix(Tc4WandBridge.CAPACITY_PREFIX);
         Tc4WandBridge.registerAdapter();
         ArcaneAnvil.register(modBus);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ArcaneAnvilConfig.SPEC);

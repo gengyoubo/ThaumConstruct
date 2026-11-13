@@ -1,6 +1,11 @@
 {
+  "itemGroup.tc_t.thaumconstruct": "神秘工匠",
   "item.tc_t.wand": "法杖",
   "block.tc_t.arcane_anvil": "奥术工匠砧",
+  "jei.tc_t.anvil_conversion.title": "法杖交互",
+  "jei.tc_t.anvil_conversion.click": "Shift + 右键",
+  "jei.tc_t.anvil_conversion.material": "保留工匠砧的材质和物品",
+  "jei.tc_t.anvil_conversion.wand": "使用法杖时不会消耗法杖",
   "message.tc_t.arcane_anvil.converted": "工匠砧已转换为奥术工匠砧",
   "gui.tc_t.arcane_anvil.vis": "基础要素",
   "gui.tc_t.arcane_anvil.wand_slot": "放入提供要素的法杖",
@@ -66,5 +71,10 @@
   "message.tc_t.staff_rod.need_charm": "请先用元始魔力右键杖芯",
   "message.tc_t.staff_rod.need_wand": "需要普通法杖注入秩序 Vis",
   "message.tc_t.staff_rod.insufficient": "秩序 Vis 不足，基础需求 %s 点",
-  "message.tc_t.staff_rod.finished": "手杖芯已完成"
+  "message.tc_t.staff_rod.finished": "手杖芯已完成",
+  "jei.tc_t.staff_rod.title": "手杖芯注魔",
+  "jei.tc_t.staff_rod.step1": "1. 在浇注台上用元始魔力右键",
+  "jei.tc_t.staff_rod.step2": "2. 再用普通法杖右键",
+  "jei.tc_t.staff_rod.cost": "基础消耗：%s 秩序 Vis",
+  "jei.tc_t.staff_rod.wand": "任意普通法杖，不会消耗"
 }

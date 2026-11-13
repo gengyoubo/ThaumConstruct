@@ -2,7 +2,8 @@ package github.com.gengyoubo.TCt.arcane;
 
 import github.com.gengyoubo.TCt.TCt;
 import github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.network.chat.Component;
@@ -12,21 +13,24 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import slimeknights.tconstruct.tables.TinkerTables;
+import slimeknights.tconstruct.tables.block.TinkersAnvilBlock;
 import slimeknights.tconstruct.tables.block.entity.table.TinkerStationBlockEntity;
+import slimeknights.tconstruct.tables.TinkerTables;
 
 @Mod.EventBusSubscriber(modid = TCt.MOD_ID)
 public final class ArcaneAnvilConversion {
     private ArcaneAnvilConversion() { }
+    private static final SoundEvent WAND_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("thaumcraft", "wand"));
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void use(PlayerInteractEvent.RightClickBlock event) {
         var level = event.getLevel();
         var pos = event.getPos();
         BlockState original = level.getBlockState(pos);
-        if (!event.getEntity().isShiftKeyDown() || !original.is(TinkerTables.tinkersAnvil.get()) || !Tc4WandBridge.available()
+        if (!event.getEntity().isShiftKeyDown() || (!(original.getBlock() instanceof TinkersAnvilBlock) && !original.is(TinkerTables.scorchedAnvil.get()))
+                || original.is(ArcaneAnvil.BLOCK.get()) || !Tc4WandBridge.available()
                 || !Tc4WandBridge.isHostWand(event.getItemStack())) return;
-        if (!(level.getBlockEntity(pos) instanceof TinkerStationBlockEntity old)) return;
+        if (!(level.getBlockEntity(pos) instanceof TinkerStationBlockEntity old) || old.getContainerSize() > 6) return;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.sidedSuccess(level.isClientSide));
         if (level.isClientSide) return;
@@ -43,7 +47,7 @@ public final class ArcaneAnvilConversion {
         next.load(data);
         next.setChanged();
         level.sendBlockUpdated(pos, replacement, replacement, 3);
-        level.playSound(null, pos, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.BLOCKS, 1, 1);
+        level.playSound(null, pos, WAND_SOUND, SoundSource.BLOCKS, 1, 1);
         event.getEntity().displayClientMessage(Component.translatable("message.tc_t.arcane_anvil.converted"), true);
     }
 

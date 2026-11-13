@@ -5,7 +5,12 @@ import github.com.gengyoubo.TCt.compat.tc4.ArcaneVis;
 import github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge;
 import github.com.gengyoubo.TCt.item.TCtItems;
 import github.com.gengyoubo.TCt.stats.Aspect;
+import github.com.gengyoubo.mfcl.api.LegacyMappings;
+import github.com.gengyoubo.mfcl.api.LegacyStack;
+import github.com.gengyoubo.mfcl.api.MfclApi;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -21,6 +26,8 @@ import net.minecraftforge.fml.common.Mod;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
 import slimeknights.tconstruct.library.tools.part.IMaterialItem;
 import slimeknights.tconstruct.smeltery.block.entity.CastingBlockEntity;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /** Awakens a cooled staff-core casting on a Tinkers casting table in two ordered steps. */
@@ -28,7 +35,32 @@ import java.util.Map;
 public final class StaffRodCasting {
     private StaffRodCasting() { }
     public static final String ATTUNED = "tc_t_staff_core_attuned";
-    private static final TagKey<Item> CHARM = TagKey.create(Registries.ITEM, TCt.getResource("primal_charm"));
+    public static final TagKey<Item> CHARM = TagKey.create(Registries.ITEM, TCt.getResource("primal_charm"));
+
+    private static final ResourceLocation TC4_CHARM = ResourceLocation.fromNamespaceAndPath("thaumcraft", "item_resource/meta_15");
+
+    /** Tag ingredients normally discard the legacy metadata stored on MFCL item stacks. */
+    public static List<ItemStack> displayCharms() {
+        List<ItemStack> result = new ArrayList<>();
+        for (var holder : BuiltInRegistries.ITEM.getTagOrEmpty(CHARM)) {
+            Item item = holder.value();
+            if (TC4_CHARM.equals(BuiltInRegistries.ITEM.getKey(item))) {
+                MfclApi.runtime().flatMap(runtime -> runtime.mappings().toHost(LegacyMappings.ITEM_STACK,
+                        runtime.stack(new LegacyStack("Thaumcraft:ItemResource", 15, 1, "")), ItemStack.class))
+                        .filter(stack -> !stack.isEmpty() && stack.is(CHARM)).ifPresent(result::add);
+            } else {
+                result.add(item.getDefaultInstance());
+            }
+        }
+        return result;
+    }
+
+    public static boolean isCharm(ItemStack stack) {
+        if (!stack.is(CHARM)) return false;
+        if (!TC4_CHARM.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()))) return true;
+        return MfclApi.runtime().flatMap(runtime -> runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, stack)
+                .map(runtime::snapshot)).map(legacy -> legacy.metadata() == 15).orElse(false);
+    }
 
     public static int orderCost(ItemStack blank) {
         var material = IMaterialItem.getMaterialFromStack(blank);
@@ -46,7 +78,7 @@ public final class StaffRodCasting {
                 : table.getItem(CastingBlockEntity.INPUT).is(TCtItems.STAFF_ROD_BLANK.get()) ? CastingBlockEntity.INPUT : -1;
         if (slot < 0) return;
         ItemStack held = event.getItemStack();
-        boolean charm = held.is(CHARM);
+        boolean charm = isCharm(held);
         boolean wand = !charm && Tc4WandBridge.isHostWand(held);
         if (!charm && !wand) return;
         event.setCanceled(true);
