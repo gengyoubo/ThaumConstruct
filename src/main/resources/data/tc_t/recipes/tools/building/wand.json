@@ -1,5 +1,5 @@
 {
-  "type": "tconstruct:tool_building",
+  "type": "tc_t:wand_building",
   "result": "tc_t:wand",
   "result_count": 1
 }

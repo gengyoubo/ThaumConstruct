@@ -25,10 +25,11 @@ public final class WandTextures {
     private static final Map<String, Optional<ResourceLocation>> OWN = new ConcurrentHashMap<>();
 
     /** 匠魂材料 -> TC4 贴图名 */
-    private static final Map<String, String> TC4_RODS = Map.of("tconstruct:wood", "wand_rod_wood");
+    private static final Map<String, String> TC4_RODS = Map.of("tconstruct:wood", "wand_rod_wood", "tc_t:silverwood", "wand_rod_silverwood");
     private static final Map<String, String> TC4_CAPS = Map.of(
             "tconstruct:copper", "wand_cap_copper",
-            "tconstruct:iron", "wand_cap_iron");
+            "tconstruct:iron", "wand_cap_iron",
+            "tconstruct:gold", "wand_cap_gold");
 
     public static ResourceLocation rod(@Nullable MaterialVariantId material) {
         return resolve("rod", material, TC4_RODS, "tconstruct:wood");

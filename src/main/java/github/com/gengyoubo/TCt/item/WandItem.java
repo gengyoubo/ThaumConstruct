@@ -59,6 +59,16 @@ public class WandItem extends ModifiableItem {
         return TCt.getResource("vis_" + aspect.getId());
     }
 
+    /** Rebuild pre-existing wands once so their saved stats include the new aspect capacities. */
+    public static ToolStack toolWithAspectStats(ItemStack stack) {
+        ToolStack tool = ToolStack.from(stack);
+        var stats = stack.getTagElement("tic_stats");
+        if (ToolStack.isInitialized(stack) && stats != null && !stats.contains("tc_t:vis_capacity_aer")) {
+            tool.rebuildStats();
+        }
+        return tool;
+    }
+
     /* 右键：装了 MFCL 和神秘时代 4 时转交给 TC4 的法杖逻辑，否则按普通匠魂工具处理 */
 
     private static final boolean MFCL = ModList.get().isLoaded("mfcl");
@@ -171,12 +181,13 @@ public class WandItem extends ModifiableItem {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltips, TooltipFlag flag) {
+        if (ToolStack.isInitialized(stack)) toolWithAspectStats(stack);
         int start = tooltips.size();
         super.appendHoverText(stack, level, tooltips, flag);
         if (SafeClientAccess.getTooltipKey() == TooltipKey.NORMAL && getToolDefinition().isDataLoaded()
                 && ToolStack.isInitialized(stack) && !TooltipUtil.isDisplay(stack)) {
             List<Component> wandInfo = new ArrayList<>();
-            getStatInformation(ToolStack.from(stack), level == null ? null : SafeClientAccess.getPlayer(),
+            getStatInformation(toolWithAspectStats(stack), level == null ? null : SafeClientAccess.getPlayer(),
                     wandInfo, TooltipKey.NORMAL, flag);
             tooltips.addAll(start, wandInfo);
         }
@@ -210,7 +221,8 @@ public class WandItem extends ModifiableItem {
                 vis.append(Component.literal(" | ").withStyle(ChatFormatting.GRAY));
             }
             float amount = tool.getPersistentData().getInt(visKey(aspect)) / 100f;
-            vis.append(Component.literal(VIS_FORMAT.format(amount)).withStyle(style -> style.withColor(aspect.getColor())));
+            vis.append(Component.literal(VIS_FORMAT.format(amount) + "/" + WandToolStats.capacity(stats, aspect))
+                    .withStyle(style -> style.withColor(aspect.getColor())));
         }
         tooltips.add(vis);
         return tooltips;

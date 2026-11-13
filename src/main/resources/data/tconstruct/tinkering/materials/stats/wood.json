@@ -1,7 +1,10 @@
 {
   "stats": {
     "tc_t:wand_rod": {
-      "capacity": 25
+      "capacity": 25,
+      "special_aspect": "aer",
+      "special_bonus": 5,
+      "other_bonus": -5
     }
   }
 }

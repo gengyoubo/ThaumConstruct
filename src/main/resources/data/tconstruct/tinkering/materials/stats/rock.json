@@ -1,7 +1,10 @@
 {
   "stats": {
     "tc_t:wand_rod": {
-      "capacity": 20
+      "capacity": 20,
+      "special_aspect": "terra",
+      "special_bonus": 5,
+      "other_bonus": -10
     }
   }
 }

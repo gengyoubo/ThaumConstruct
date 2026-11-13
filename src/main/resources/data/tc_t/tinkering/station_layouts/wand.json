@@ -6,8 +6,8 @@
     {
       "icon": "tc_t:wand_rod",
       "translation_key": "item.tc_t.wand_rod",
-      "x": 33,
-      "y": 42,
+      "x": 62,
+      "y": 77,
       "filter": {
         "item": "tc_t:wand_rod"
       }
@@ -15,8 +15,8 @@
     {
       "icon": "tc_t:wand_cap",
       "translation_key": "item.tc_t.wand_cap",
-      "x": 53,
-      "y": 22,
+      "x": 86,
+      "y": 53,
       "filter": {
         "item": "tc_t:wand_cap"
       }
@@ -24,8 +24,8 @@
     {
       "icon": "tc_t:wand_cap",
       "translation_key": "item.tc_t.wand_cap",
-      "x": 13,
-      "y": 62,
+      "x": 38,
+      "y": 101,
       "filter": {
         "item": "tc_t:wand_cap"
       }

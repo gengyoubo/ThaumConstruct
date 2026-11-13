@@ -49,11 +49,12 @@ public final class Tc4WandBridge {
     public static final String WAND_KEY = "Thaumcraft:WandCasting";
 
     /** TC4 自带的杖端；没有的材料退回铁杖端 */
-    private static final Map<String, String> CAPS = Map.of("tconstruct:iron", "iron", "tconstruct:copper", "copper");
+    private static final Map<String, String> CAPS = Map.of("tconstruct:iron", "iron", "tconstruct:copper", "copper", "tconstruct:gold", "gold");
     /** 本次运行里已经在 TC4 注册过的自定义杖柄 */
     private static final Set<String> REGISTERED_RODS = new HashSet<>();
     private static final String LEGACY_WAND_DATA = "tc_t_legacy_wand";
     private static final String HOST_WAND_DATA = "tc_t_host_wand";
+    public static final String CAPACITY_PREFIX = "tc_t_capacity_";
 
     @LegacyType("thaumcraft.api.wands.WandRod")
     public interface WandRodFactory {
@@ -85,6 +86,8 @@ public final class Tc4WandBridge {
         String getString(String key);
         @LegacyMethod(name = "func_82580_o", descriptor = "(Ljava/lang/String;)V")
         void remove(String key);
+        @LegacyMethod(name = "func_74764_b", descriptor = "(Ljava/lang/String;)Z")
+        boolean contains(String key);
     }
 
     /** MFCL v3 uses this representation for rendering, inventories and original gameplay. */
@@ -177,9 +180,10 @@ public final class Tc4WandBridge {
 
     /** 生成对应的 TC4 法杖：{rod, cap, 六种要素的魔力（百分之一单位）} */
     public static ItemStack toHost(ItemStack wand) {
-        ToolStack tool = ToolStack.from(wand);
+        ToolStack tool = WandItem.toolWithAspectStats(wand);
         MaterialNBT materials = tool.getMaterials();
-        int capacity = Math.round(tool.getStats().get(WandToolStats.VIS_CAPACITY));
+        int capacity = 0;
+        for (Aspect aspect : Aspect.values()) capacity = Math.max(capacity, WandToolStats.capacity(tool.getStats(), aspect));
         String saved = wand.getOrCreateTag().getString(LEGACY_WAND_DATA);
         LegacyRuntime runtime = runtime();
         LegacyObject legacy = runtime.stack(new LegacyStack(WAND_KEY, 0, 1, saved.isEmpty() ? "{}" : saved));
@@ -187,6 +191,7 @@ public final class Tc4WandBridge {
         tag.putString("rod", rodTag(material(materials, 0), capacity));
         tag.putString("cap", capTag(material(materials, 1)));
         for (Aspect aspect : Aspect.values()) {
+            tag.putInt(CAPACITY_PREFIX + aspect.getId(), WandToolStats.capacity(tool.getStats(), aspect) * 100);
             tag.putInt(aspect.getId(), tool.getPersistentData().getInt(WandItem.visKey(aspect)));
         }
         // 和 tc4modern 一样走公开接口：先在旧版里造出 ItemStack，再映射成 1.20 物品
@@ -203,9 +208,9 @@ public final class Tc4WandBridge {
             LegacyObject rawTag = runtime.accessor(OldStack.class, legacy).tag();
             if (rawTag == null) return;
             OldTag data = runtime.accessor(OldTag.class, rawTag);
-            ToolStack tool = ToolStack.from(wand);
-            int max = Math.round(tool.getStats().get(WandToolStats.VIS_CAPACITY)) * 100;
+            ToolStack tool = WandItem.toolWithAspectStats(wand);
             for (Aspect aspect : Aspect.values()) {
+                int max = WandToolStats.capacity(tool.getStats(), aspect) * 100;
                 int value = Math.max(0, Math.min(max, data.getInt(aspect.getId())));
                 tool.getPersistentData().putInt(WandItem.visKey(aspect), value);
             }
@@ -304,6 +309,7 @@ public final class Tc4WandBridge {
 
     /** 木杖柄直接用 TC4 的 wood；其他材料按容量注册一个自定义 TC4 杖柄（tc_t_<容量>） */
     private static String rodTag(@Nullable MaterialVariantId material, int capacity) {
+        if (material != null && material.getId().toString().equals("tc_t:silverwood") && capacity == 100) return "silverwood";
         if (material != null && material.getId().toString().equals("tconstruct:wood") && capacity == 25) {
             return "wood";
         }

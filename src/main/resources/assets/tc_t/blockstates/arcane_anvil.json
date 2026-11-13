@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "tc_t:block/arcane_anvil",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "tc_t:block/arcane_anvil",
+      "y": 270
+    },
+    "facing=west": {
+      "model": "tc_t:block/arcane_anvil"
+    },
+    "facing=east": {
+      "model": "tc_t:block/arcane_anvil",
+      "y": 180
+    }
+  }
+}

@@ -1,7 +1,10 @@
 {
   "stats": {
     "tc_t:wand_rod": {
-      "capacity": 30
+      "capacity": 30,
+      "special_aspect": "ordo",
+      "special_bonus": 5,
+      "other_bonus": -5
     },
     "tc_t:wand_cap": {
       "vis_cost": 1.1,

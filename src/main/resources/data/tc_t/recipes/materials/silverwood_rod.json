@@ -1,0 +1,7 @@
+{
+  "type": "tconstruct:material",
+  "ingredient": { "tag": "tc_t:silverwood_rod_material" },
+  "material": "tc_t:silverwood",
+  "needed": 1,
+  "value": 2
+}
