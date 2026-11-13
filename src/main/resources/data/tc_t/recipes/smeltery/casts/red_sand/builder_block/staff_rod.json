@@ -1,0 +1,12 @@
+{
+  "type": "tconstruct:item_part_builder",
+  "pattern": "tc_t:staff_rod",
+  "pattern_item": {
+    "tag": "forge:sand/red"
+  },
+  "result": {
+    "count": 4,
+    "item": "tc_t:staff_rod_red_sand_cast"
+  },
+  "title_key": "tconstruct:sand_cast"
+}

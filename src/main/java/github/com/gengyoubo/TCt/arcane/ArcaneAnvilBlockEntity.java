@@ -22,7 +22,7 @@ import java.util.Map;
 public final class ArcaneAnvilBlockEntity extends TinkerStationBlockEntity {
     private final SimpleContainer wand = new SimpleContainer(1) {
         @Override public void setChanged() { super.setChanged(); ArcaneAnvilBlockEntity.this.setChanged(); getCraftingResult().clearContent(); }
-        @Override public boolean canPlaceItem(int slot, ItemStack stack) { return stack.getCount() == 1 && github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge.isHostWand(stack); }
+        @Override public boolean canPlaceItem(int slot, ItemStack stack) { return stack.getCount() == 1 && github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge.canCraftWith(stack); }
         @Override public int getMaxStackSize() { return 1; }
     };
     public ArcaneAnvilBlockEntity(BlockPos pos, BlockState state) { super(pos, state, 6); }
@@ -39,27 +39,59 @@ public final class ArcaneAnvilBlockEntity extends TinkerStationBlockEntity {
         wand.setItem(0, tag.contains("ArcaneWand", 10) ? ItemStack.of(tag.getCompound("ArcaneWand")) : ItemStack.EMPTY);
     }
 
+    // Base cost per primal aspect, before the crafting wand and equipment modifiers.
+    private static final Map<String, Integer> ROD_COSTS = Map.ofEntries(
+            Map.entry("tconstruct:cobalt", 4), Map.entry("tconstruct:steel", 4),
+            Map.entry("tconstruct:blazing_bone", 4), Map.entry("tconstruct:nicrosil", 5),
+            Map.entry("tconstruct:knightmetal", 5), Map.entry("tconstruct:cinderslime", 6),
+            Map.entry("tconstruct:queens_slime", 7), Map.entry("tconstruct:hepatizon", 8),
+            Map.entry("tconstruct:knightslime", 8), Map.entry("tconstruct:manyullyn", 10),
+            Map.entry("tc_t:diamond", 14), Map.entry("tc_t:netherite", 18));
+    private static final Map<String, Integer> CAP_COSTS = Map.ofEntries(
+            Map.entry("tconstruct:cobalt", 2), Map.entry("tconstruct:steel", 2),
+            Map.entry("tconstruct:blazing_bone", 2), Map.entry("tconstruct:nicrosil", 2),
+            Map.entry("tconstruct:knightmetal", 3), Map.entry("tconstruct:cinderslime", 2),
+            Map.entry("tconstruct:queens_slime", 3), Map.entry("tconstruct:hepatizon", 3),
+            Map.entry("tconstruct:knightslime", 3), Map.entry("tconstruct:manyullyn", 4),
+            Map.entry("tc_t:diamond", 4), Map.entry("tc_t:netherite", 5));
+
     public static boolean advancedMaterial(String id) {
-        return id.equals("tc_t:silverwood") || id.equals("tconstruct:gold");
+        return id.equals("tc_t:silverwood") || id.equals("tconstruct:gold")
+                || ROD_COSTS.containsKey(id) || CAP_COSTS.containsKey(id);
     }
 
-    /** TC4's original recipe multiplies rod and cap craft costs for each primal aspect. */
+    /** Each primal aspect costs two rod values times the more expensive cap value. */
     public static Map<Aspect, Integer> cost(ItemStack output) {
         if (!(output.getItem() instanceof WandItem)) return Map.of();
-        var materials = ToolStack.from(output).getMaterials();
+        var materials = WandItem.toolWithAspectStats(output).getMaterials();
         if (materials.size() < 3) return Map.of();
-        String rod = materials.get(0).getVariant().getId().toString();
-        String cap1 = materials.get(1).getVariant().getId().toString();
-        String cap2 = materials.get(2).getVariant().getId().toString();
-        if (!advancedMaterial(rod) && !advancedMaterial(cap1) && !advancedMaterial(cap2)) return Map.of();
-        int rodCost = rod.equals("tc_t:silverwood") ? ArcaneAnvilConfig.SILVERWOOD_ROD.get() : 1;
-        int capCost = Math.max(capCost(cap1), capCost(cap2));
+        WandItem.Kind kind = ((WandItem) output.getItem()).kind();
+        int rodCount = 1;
+        int capCount = kind == WandItem.Kind.SCEPTRE ? 3 : 2;
+        if (materials.size() < rodCount + capCount) return Map.of();
+        double rods = 0;
+        int caps = 0;
+        boolean advanced = kind != WandItem.Kind.WAND;
+        for (int i = 0; i < rodCount; i++) {
+            String id = materials.get(i).getVariant().getId().toString();
+            advanced |= advancedMaterial(id);
+            rods += id.equals("tc_t:silverwood") ? ArcaneAnvilConfig.SILVERWOOD_ROD.get() : ROD_COSTS.getOrDefault(id, 1);
+        }
+        if (rodCount == 1) rods *= 2;
+        for (int i = rodCount; i < rodCount + capCount; i++) {
+            String id = materials.get(i).getVariant().getId().toString();
+            advanced |= advancedMaterial(id);
+            caps = Math.max(caps, capCost(id));
+        }
+        if (!advanced) return Map.of();
         var cost = new EnumMap<Aspect, Integer>(Aspect.class);
-        for (var aspect : Aspect.values()) cost.put(aspect, rodCost * capCost * 100);
+        int centivis = (int) Math.round(rods * caps * (kind == WandItem.Kind.SCEPTRE ? 1.5 : 1.0) * 100);
+        for (var aspect : Aspect.values()) cost.put(aspect, centivis);
         return cost;
     }
     private static int capCost(String id) {
-        return id.equals("tconstruct:gold") ? ArcaneAnvilConfig.GOLD_CAP.get() : id.equals("tconstruct:copper") ? ArcaneAnvilConfig.COPPER_CAP.get() : 1;
+        return id.equals("tconstruct:gold") ? ArcaneAnvilConfig.GOLD_CAP.get()
+                : id.equals("tconstruct:copper") ? ArcaneAnvilConfig.COPPER_CAP.get() : CAP_COSTS.getOrDefault(id, 1);
     }
 
     public boolean canPay(Player player, ItemStack result) {
@@ -70,8 +102,9 @@ public final class ArcaneAnvilBlockEntity extends TinkerStationBlockEntity {
 
     @Override public ItemStack calcResult(Player player) {
         ItemStack result = super.calcResult(player);
-        return !result.isEmpty() && (!(result.getItem() instanceof WandItem)
-                || player instanceof ServerPlayer && !canPay(player, result)) ? ItemStack.EMPTY : result;
+        // Keep a visible preview so the player can see the required aspects before inserting a wand.
+        // The result slot checks canPay on the server before allowing pickup.
+        return !result.isEmpty() && !(result.getItem() instanceof WandItem) ? ItemStack.EMPTY : result;
     }
 
     @Override public void onCraft(Player player, ItemStack result, int count) {

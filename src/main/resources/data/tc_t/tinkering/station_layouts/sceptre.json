@@ -1,0 +1,54 @@
+{
+  "icon": {
+    "item": "tc_t:sceptre"
+  },
+  "input_slots": [
+    {
+      "filter": {
+        "item": "tc_t:wand_rod"
+      },
+      "icon": "tc_t:wand_rod",
+      "translation_key": "item.tc_t.wand_rod",
+      "x": 62,
+      "y": 77
+    },
+    {
+      "filter": {
+        "item": "tc_t:wand_cap"
+      },
+      "icon": "tc_t:wand_cap",
+      "translation_key": "item.tc_t.wand_cap",
+      "x": 62,
+      "y": 53
+    },
+    {
+      "filter": {
+        "item": "tc_t:wand_cap"
+      },
+      "icon": "tc_t:wand_cap",
+      "translation_key": "item.tc_t.wand_cap",
+      "x": 86,
+      "y": 77
+    },
+    {
+      "filter": {
+        "item": "tc_t:wand_cap"
+      },
+      "icon": "tc_t:wand_cap",
+      "translation_key": "item.tc_t.wand_cap",
+      "x": 38,
+      "y": 101
+    },
+    {
+      "filter": {
+        "tag": "tc_t:primal_charm"
+      },
+      "icon": "tconstruct:gem",
+      "translation_key": "item.tc_t.primal_charm",
+      "x": 86,
+      "y": 53
+    }
+  ],
+  "sortIndex": 101,
+  "translation_key": "item.tc_t.sceptre"
+}

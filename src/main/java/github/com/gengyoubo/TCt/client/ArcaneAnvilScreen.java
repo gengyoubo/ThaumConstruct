@@ -38,6 +38,8 @@ public final class ArcaneAnvilScreen extends TinkerStationScreen {
     private static final String TC4_GUI = "gui_arcaneworkbench";
     // Keep the TC4 grid cells under the rod and caps ({column, row}).
     private static final UnaryOperator<NativeImage> WAND_CLOTH = Tc4GridEraser.keeping(new int[]{2, 0}, new int[]{1, 1}, new int[]{0, 2});
+    private static final UnaryOperator<NativeImage> SCEPTRE_CLOTH = Tc4GridEraser.keeping(
+            new int[]{1, 0}, new int[]{2, 0}, new int[]{1, 1}, new int[]{2, 1}, new int[]{0, 2});
     /** TC4 aspect positions (centres) in gui_arcaneworkbench.png, in TC4's primal order: aer, terra, ignis, aqua, ordo, perditio. */
     private static final int[][] TC4_ASPECTS = {{72, 21}, {24, 43}, {24, 102}, {72, 124}, {120, 102}, {120, 43}};
 
@@ -51,19 +53,21 @@ public final class ArcaneAnvilScreen extends TinkerStationScreen {
     @Override public void init() {
         super.init();
         StationSlotLayout wand = StationSlotLayoutLoader.getInstance().get(WAND_LAYOUT);
-        // Only the arcane tool category belongs on this anvil. Select it on open and
-        // construct a one-button panel, leaving room for additional arcane tools later.
-        super.onToolSelection(wand);
+        // Restrict the tool selector to the three Thaumcraft tool layouts.
+        if (!isWandLayout()) super.onToolSelection(wand);
+        var sceptre = StationSlotLayoutLoader.getInstance().get(TCt.getResource("sceptre"));
+        var staff = StationSlotLayoutLoader.getInstance().get(TCt.getResource("staff"));
         buttonsScreen = new TinkerStationButtonsWidget(this,
-                cornerX - TinkerStationButtonsWidget.width(1) - 2,
+                cornerX - TinkerStationButtonsWidget.width(3) - 2,
                 cornerY + centerBeam.h + buttonDecorationTop.h,
-                List.of(wand), TinkerStationButtonsWidget.METAL_STYLE) {
-            @Override public int getImageWidth() { return TinkerStationButtonsWidget.width(1); }
+                List.of(wand, sceptre, staff), TinkerStationButtonsWidget.METAL_STYLE) {
+            @Override public int getImageWidth() { return TinkerStationButtonsWidget.width(3); }
         };
     }
 
     private boolean isWandLayout() {
-        return WAND_LAYOUT.equals(getCurrentLayout().getName());
+        var id = getCurrentLayout().getName();
+        return WAND_LAYOUT.equals(id) || TCt.getResource("sceptre").equals(id) || TCt.getResource("staff").equals(id);
     }
 
     @Override public void updateLayout() {
@@ -72,7 +76,8 @@ public final class ArcaneAnvilScreen extends TinkerStationScreen {
     }
 
     @Override public void onToolSelection(StationSlotLayout layout) {
-        if (WAND_LAYOUT.equals(layout.getName())) super.onToolSelection(layout);
+        var id = layout.getName();
+        if (WAND_LAYOUT.equals(id) || TCt.getResource("sceptre").equals(id) || TCt.getResource("staff").equals(id)) super.onToolSelection(layout);
     }
 
     /** Builds the bigger panel from pieces of tinker.png: border, plain fill, and the original slot frames and arrow. */
@@ -110,7 +115,10 @@ public final class ArcaneAnvilScreen extends TinkerStationScreen {
         // the parent drew its tool icon and slot frames in the old spot; the cloth goes over them and they are redrawn
         RenderSystem.enableBlend();
         RenderSystem.disableDepthTest();
-        Optional<ResourceLocation> tc4 = Tc4Textures.gui(TC4_GUI, TC4_GUI + "_wand", WAND_CLOTH);
+        boolean sceptre = TCt.getResource("sceptre").equals(getCurrentLayout().getName());
+        Optional<ResourceLocation> tc4 = sceptre
+                ? Tc4Textures.gui(TC4_GUI, TC4_GUI + "_sceptre", SCEPTRE_CLOTH)
+                : Tc4Textures.gui(TC4_GUI, TC4_GUI + "_wand", WAND_CLOTH);
         int x = cornerX, y = cornerY;
         if (tc4.isPresent()) {
             graphics.blit(tc4.get(), x + CLOTH_X, y + CLOTH_Y, CLOTH_U, CLOTH_V, CLOTH_W, CLOTH_H);
@@ -162,7 +170,7 @@ public final class ArcaneAnvilScreen extends TinkerStationScreen {
         for (int i = 0; i < aspects.length; i++) {
             Aspect aspect = aspects[i];
             int cx = cornerX + TC4_ASPECTS[i][0] + TC4_DX, cy = cornerY + TC4_ASPECTS[i][1] + TC4_DY;
-            int amount = costs.getOrDefault(aspect, 0) / 100;
+            int amount = costs.getOrDefault(aspect, 0);
             int rgb = aspect.getColor().getValue();
             float alpha = amount > 0 ? 1f : 0.3f;
             var icon = Tc4Textures.aspect(aspect.getId());
@@ -175,7 +183,7 @@ public final class ArcaneAnvilScreen extends TinkerStationScreen {
                 graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, (Math.round(alpha * 255) << 24) | rgb);
             }
             if (amount > 0) {
-                String text = Integer.toString(amount);
+                String text = java.math.BigDecimal.valueOf(amount, 2).stripTrailingZeros().toPlainString();
                 graphics.drawString(font, text, cx + 9 - font.width(text), cy + 1, 0xffffffff, true);
             }
         }

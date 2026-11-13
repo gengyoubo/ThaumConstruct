@@ -1,6 +1,8 @@
 package github.com.gengyoubo.TCt.arcane;
 
 import com.google.gson.JsonObject;
+import github.com.gengyoubo.TCt.item.WandItem;
+import github.com.gengyoubo.TCt.item.TCtItems;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -30,13 +32,22 @@ public final class ArcaneWandRecipe extends ToolBuildingRecipe {
     @Override public RecipeSerializer<?> getSerializer() { return ArcaneAnvil.WAND_RECIPE.get(); }
     @Override public boolean matches(ITinkerStationContainer container, Level level) {
         if (!super.matches(container, level)) return false;
-        boolean advanced = false;
+        WandItem.Kind kind = getOutput() instanceof WandItem wand ? wand.kind() : WandItem.Kind.WAND;
+        boolean advanced = kind != WandItem.Kind.WAND;
+        slimeknights.tconstruct.library.materials.definition.MaterialVariantId cap = null;
+        int caps = 0;
         for (int i = 0; i < container.getInputCount(); i++) {
             var input = container.getInput(i);
             if (input.isEmpty()) continue;
             var material = IMaterialItem.getMaterialFromStack(input);
             if (material != null && ArcaneAnvilBlockEntity.advancedMaterial(material.getId().toString())) advanced = true;
+            if (kind == WandItem.Kind.SCEPTRE && input.is(TCtItems.WAND_CAP.get())) {
+                if (cap != null && !cap.equals(material)) return false;
+                cap = material;
+                caps++;
+            }
         }
+        if (kind == WandItem.Kind.SCEPTRE && caps != 3) return false;
         if (!advanced) return true;
         try {
             return container instanceof TinkerStationContainerWrapper && STATION.get(container) instanceof ArcaneAnvilBlockEntity;

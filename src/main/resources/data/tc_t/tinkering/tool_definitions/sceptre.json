@@ -1,0 +1,63 @@
+{
+  "modules": [
+    {
+      "type": "tconstruct:part_stats",
+      "parts": [
+        "tc_t:wand_rod",
+        {
+          "item": "tc_t:wand_cap",
+          "scale": 0.3333333333333333
+        },
+        {
+          "item": "tc_t:wand_cap",
+          "scale": 0.3333333333333333
+        },
+        {
+          "item": "tc_t:wand_cap",
+          "scale": 0.3333333333333333
+        }
+      ],
+      "primary_part": 0
+    },
+    {
+      "type": "tconstruct:default_materials",
+      "materials": [
+        {
+          "type": "tconstruct:random",
+          "tier": 1
+        },
+        {
+          "type": "tconstruct:random",
+          "tier": 1
+        },
+        {
+          "type": "tconstruct:random",
+          "tier": 1
+        },
+        {
+          "type": "tconstruct:random",
+          "tier": 1
+        }
+      ]
+    },
+    {
+      "type": "tconstruct:multiply_stats",
+      "multipliers": {
+        "tc_t:vis_capacity": 1.5,
+        "tc_t:vis_capacity_aer": 1.5,
+        "tc_t:vis_capacity_terra": 1.5,
+        "tc_t:vis_capacity_ignis": 1.5,
+        "tc_t:vis_capacity_aqua": 1.5,
+        "tc_t:vis_capacity_ordo": 1.5,
+        "tc_t:vis_capacity_perditio": 1.5
+      }
+    },
+    {
+      "type": "tconstruct:modifier_slots",
+      "slots": {
+        "upgrades": 3,
+        "abilities": 1
+      }
+    }
+  ]
+}

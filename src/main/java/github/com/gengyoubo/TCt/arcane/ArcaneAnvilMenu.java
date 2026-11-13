@@ -77,7 +77,10 @@ public final class ArcaneAnvilMenu extends TinkerStationContainerMenu {
         super.addInventorySlots();
     }
     @Override public void setToolSelection(StationSlotLayout layout) {
-        super.setToolSelection(StationSlotLayoutLoader.getInstance().get(TCt.getResource("wand")));
+        var id = layout.getName();
+        if (!id.equals(TCt.getResource("wand")) && !id.equals(TCt.getResource("sceptre")) && !id.equals(TCt.getResource("staff")))
+            layout = StationSlotLayoutLoader.getInstance().get(TCt.getResource("wand"));
+        super.setToolSelection(layout);
         wandSelected = true;
     }
 

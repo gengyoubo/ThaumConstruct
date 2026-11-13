@@ -1,0 +1,11 @@
+{
+  "stats": {
+    "tc_t:wand_cap": {
+      "vis_cost": 0.75,
+      "capacity_bonus": 70
+    },
+    "tc_t:wand_rod": {
+      "capacity": 150
+    }
+  }
+}

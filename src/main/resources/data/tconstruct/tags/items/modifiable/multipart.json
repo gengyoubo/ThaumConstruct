@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "tc_t:wand"
+    "tc_t:wand",
+    "tc_t:sceptre",
+    "tc_t:staff"
   ]
 }

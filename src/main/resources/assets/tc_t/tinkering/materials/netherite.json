@@ -1,0 +1,26 @@
+{
+  "color": "FF554E53",
+  "fallbacks": [
+    "metal"
+  ],
+  "generator": {
+    "supported_stats": [
+      "tc_t:wand_cap"
+    ],
+    "transformer": {
+      "type": "tconstruct:recolor_sprite",
+      "color_mapping": {
+        "type": "tconstruct:grey_to_color",
+        "palette": {
+          "000": "FF000000",
+          "063": "FF171316",
+          "102": "FF30272B",
+          "140": "FF554E53",
+          "178": "FF756B6E",
+          "216": "FFABA19D",
+          "255": "FFFFFFFF"
+        }
+      }
+    }
+  }
+}

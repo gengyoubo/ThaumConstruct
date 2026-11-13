@@ -33,8 +33,8 @@ import slimeknights.tconstruct.library.tools.nbt.MaterialNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -48,8 +48,7 @@ public final class Tc4WandBridge {
     private static final Logger LOG = LogUtils.getLogger();
     public static final String WAND_KEY = "Thaumcraft:WandCasting";
 
-    /** TC4 自带的杖端；没有的材料退回铁杖端 */
-    private static final Map<String, String> CAPS = Map.of("tconstruct:iron", "iron", "tconstruct:copper", "copper", "tconstruct:gold", "gold");
+    private static final Set<String> REGISTERED_CAPS = new HashSet<>();
     /** 本次运行里已经在 TC4 注册过的自定义杖柄 */
     private static final Set<String> REGISTERED_RODS = new HashSet<>();
     private static final String LEGACY_WAND_DATA = "tc_t_legacy_wand";
@@ -60,6 +59,25 @@ public final class Tc4WandBridge {
     public interface WandRodFactory {
         @LegacyConstructor(descriptor = "(Ljava/lang/String;ILnet/minecraft/item/ItemStack;I)V")
         LegacyObject create(String tag, int capacity, LegacyObject item, int craftCost);
+    }
+
+    @LegacyType("thaumcraft.api.wands.StaffRod")
+    public interface StaffRodFactory {
+        @LegacyConstructor(descriptor = "(Ljava/lang/String;ILnet/minecraft/item/ItemStack;I)V")
+        LegacyObject create(String tag, int capacity, LegacyObject item, int craftCost);
+    }
+
+    @LegacyType("thaumcraft.common.items.wands.ItemWandCasting")
+    public interface OldWand {
+        @LegacyMethod(name = "isStaff", descriptor = "(Lnet/minecraft/item/ItemStack;)Z") boolean isStaff(LegacyObject stack);
+        @LegacyMethod(name = "isSceptre", descriptor = "(Lnet/minecraft/item/ItemStack;)Z") boolean isSceptre(LegacyObject stack);
+        @LegacyMethod(name = "getMaxVis", descriptor = "(Lnet/minecraft/item/ItemStack;)I") int getMaxVis(LegacyObject stack);
+    }
+
+    @LegacyType("thaumcraft.api.wands.WandCap")
+    public interface WandCapFactory {
+        @LegacyConstructor(descriptor = "(Ljava/lang/String;FLjava/util/List;FLnet/minecraft/item/ItemStack;I)V")
+        LegacyObject create(String tag, float baseCost, LegacyObject aspects, float specialCost, LegacyObject item, int craftCost);
     }
 
     @LegacyType("thaumcraft.api.wands.WandCap")
@@ -188,14 +206,43 @@ public final class Tc4WandBridge {
         LegacyRuntime runtime = runtime();
         LegacyObject legacy = runtime.stack(new LegacyStack(WAND_KEY, 0, 1, saved.isEmpty() ? "{}" : saved));
         OldTag tag = runtime.accessor(OldTag.class, runtime.accessor(OldStack.class, legacy).tag());
-        tag.putString("rod", rodTag(material(materials, 0), capacity));
-        tag.putString("cap", capTag(material(materials, 1)));
+        WandItem.Kind kind = ((WandItem) wand.getItem()).kind();
+        int rodCapacity = kind == WandItem.Kind.SCEPTRE ? Math.round(capacity / 1.5f) : capacity;
+        tag.putString("rod", rodTag(material(materials, 0), rodCapacity, kind == WandItem.Kind.STAFF));
+        if (kind == WandItem.Kind.SCEPTRE) tag.putInt("sceptre", 1); else tag.remove("sceptre");
+        tag.putString("cap", capTag(tool));
         for (Aspect aspect : Aspect.values()) {
             tag.putInt(CAPACITY_PREFIX + aspect.getId(), WandToolStats.capacity(tool.getStats(), aspect) * 100);
             tag.putInt(aspect.getId(), tool.getPersistentData().getInt(WandItem.visKey(aspect)));
         }
         // 和 tc4modern 一样走公开接口：先在旧版里造出 ItemStack，再映射成 1.20 物品
         return runtime.mappings().toHost(LegacyMappings.ITEM_STACK, legacy, ItemStack.class).orElseThrow();
+    }
+
+    /** A TC4 staff cannot supply an arcane workbench. */
+    public static boolean canCraftWith(ItemStack stack) {
+        try {
+            if (!isHostWand(stack)) return false;
+            var runtime = runtime();
+            var legacy = runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, stack).orElse(null);
+            if (legacy == null) return false;
+            var item = runtime.accessor(ArcaneVis.OldStack.class, legacy).item();
+            return item != null && !runtime.accessor(OldWand.class, item).isStaff(legacy);
+        } catch (RuntimeException ex) { return false; }
+    }
+
+    /** The casting-table awakening is performed with a wand, not a staff or crafting sceptre. */
+    public static boolean isNormalWand(ItemStack stack) {
+        try {
+            if (!isHostWand(stack)) return false;
+            var runtime = runtime();
+            var legacy = runtime.mappings().toLegacy(LegacyMappings.ITEM_STACK, stack).orElse(null);
+            if (legacy == null) return false;
+            var item = runtime.accessor(ArcaneVis.OldStack.class, legacy).item();
+            if (item == null) return false;
+            var wand = runtime.accessor(OldWand.class, item);
+            return !wand.isStaff(legacy) && !wand.isSceptre(legacy);
+        } catch (RuntimeException ex) { return false; }
     }
 
     /** 读取 TC4 法杖里的魔力写回我们的法杖，不超过我们自己的容量 */
@@ -299,34 +346,62 @@ public final class Tc4WandBridge {
         return index < materials.size() ? materials.get(index).getVariant() : null;
     }
 
-    private static String capTag(@Nullable MaterialVariantId material) {
-        String tag = material == null ? "iron" : CAPS.getOrDefault(material.getId().toString(), "iron");
-        // TC4 only registers copper when its legacy ore dictionary contains copper ingots.
-        // A host-side copper material does not imply that the legacy cap exists.
-        LegacyRuntime runtime = runtime();
-        return runtime.values().map(runtime.accessor(WandCaps.class).all()).containsKey(tag) ? tag : "iron";
+    /** TC4 sees the same averaged cap costs as the two Tinkers parts, including copper's special aspects. */
+    private static String capTag(ToolStack tool) {
+        int[] costs = new int[Aspect.values().length];
+        Aspect[] aspects = Aspect.values();
+        StringBuilder id = new StringBuilder("tc_t_c");
+        for (int i = 0; i < aspects.length; i++) {
+            costs[i] = Math.round(tool.getStats().get(WandToolStats.VIS_COST.get(aspects[i])) * 10000);
+            id.append('_').append(costs[i]);
+        }
+        String tag = id.toString();
+        synchronized (REGISTERED_CAPS) {
+            if (!REGISTERED_CAPS.contains(tag)) {
+                LegacyRuntime runtime = runtime();
+                int base = costs[0];
+                int special = base;
+                var specialAspects = new ArrayList<LegacyObject>();
+                for (int i = 1; i < costs.length; i++) {
+                    if (costs[i] != base) {
+                        if (special != base && costs[i] != special) {
+                            throw new IllegalStateException("TC4 cap cannot represent more than two aspect costs");
+                        }
+                        special = costs[i];
+                        specialAspects.add(runtime.accessor(ArcaneVis.OldAspects.class).get(aspects[i].getId()));
+                    }
+                }
+                LegacyObject list = runtime.values().newList(specialAspects);
+                LegacyObject item = runtime.stack(new LegacyStack("minecraft:stick", 0, 1, ""));
+                runtime.accessor(WandCapFactory.class).create(tag, base / 10000f, list, special / 10000f, item, 1);
+                REGISTERED_CAPS.add(tag);
+            }
+        }
+        return tag;
     }
 
     /** 木杖柄直接用 TC4 的 wood；其他材料按容量注册一个自定义 TC4 杖柄（tc_t_<容量>） */
-    private static String rodTag(@Nullable MaterialVariantId material, int capacity) {
-        if (material != null && material.getId().toString().equals("tc_t:silverwood") && capacity == 100) return "silverwood";
-        if (material != null && material.getId().toString().equals("tconstruct:wood") && capacity == 25) {
+    private static String rodTag(@Nullable MaterialVariantId material, int capacity, boolean staff) {
+        if (!staff && material != null && material.getId().toString().equals("tc_t:silverwood") && capacity == 100) return "silverwood";
+        if (!staff && material != null && material.getId().toString().equals("tconstruct:wood") && capacity == 25) {
             return "wood";
         }
-        String tag = "tc_t_" + capacity;
+        String tag = "tc_t_" + (staff ? "staff_" : "") + capacity;
         synchronized (REGISTERED_RODS) {
             if (!REGISTERED_RODS.contains(tag)) {
                 try {
                     LegacyRuntime runtime = MfclApi.runtime().orElseThrow();
                     LegacyObject stick = runtime.stack(new LegacyStack("minecraft:stick", 0, 1, ""));
-                    runtime.accessor(WandRodFactory.class).create(tag, capacity, stick, 1);
+                    if (staff) runtime.accessor(StaffRodFactory.class).create(tag, capacity, stick, 1);
+                    else runtime.accessor(WandRodFactory.class).create(tag, capacity, stick, 1);
                     REGISTERED_RODS.add(tag);
                 } catch (RuntimeException e) {
+                    if (staff) throw new IllegalStateException("Failed to register TC4 staff rod " + tag, e);
                     LOG.warn("Failed to register TC4 wand rod {}, falling back to wood", tag, e);
                     return "wood";
                 }
             }
         }
-        return tag;
+        return staff ? tag + "_staff" : tag;
     }
 }

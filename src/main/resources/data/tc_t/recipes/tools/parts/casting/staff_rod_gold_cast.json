@@ -1,0 +1,8 @@
+{
+  "type": "tconstruct:table_casting_material",
+  "cast": {
+    "tag": "tc_t:casts/multi_use/staff_rod"
+  },
+  "item_cost": 4,
+  "result": "tc_t:staff_rod_blank"
+}

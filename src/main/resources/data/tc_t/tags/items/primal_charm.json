@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "thaumcraft:item_resource/meta_15",
+      "required": false
+    }
+  ]
+}

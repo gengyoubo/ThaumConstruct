@@ -50,7 +50,7 @@ public final class ArcaneVis {
      * stack back only when taking the output; this method never changes the supplied stack.
      */
     public static Optional<ItemStack> pay(ServerPlayer player, ItemStack wand, Map<Aspect, Integer> costs, boolean simulate) {
-        if (wand.isEmpty() || costs.isEmpty() || costs.values().stream().anyMatch(value -> value == null || value <= 0)) {
+        if (wand.isEmpty() || !Tc4WandBridge.canCraftWith(wand) || costs.isEmpty() || costs.values().stream().anyMatch(value -> value == null || value <= 0)) {
             return Optional.empty();
         }
         var runtime = MfclApi.runtime().orElse(null);

@@ -1,6 +1,12 @@
 package github.com.gengyoubo.TCt.item;
 
 import github.com.gengyoubo.TCt.TCt;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import github.com.gengyoubo.TCt.client.WandClientExtension;
 import github.com.gengyoubo.TCt.compat.tc4.Tc4WandBridge;
 import github.com.gengyoubo.TCt.stats.Aspect;
@@ -45,8 +51,29 @@ import java.util.function.Consumer;
  * 客户端用 3D 渲染器绘制。
  */
 public class WandItem extends ModifiableItem {
-    public WandItem(Properties properties, ToolDefinition definition) {
+    public enum Kind { WAND, SCEPTRE, STAFF }
+    private final Kind kind;
+
+    public WandItem(Properties properties, ToolDefinition definition) { this(properties, definition, Kind.WAND); }
+    public WandItem(Properties properties, ToolDefinition definition, Kind kind) {
         super(properties, definition);
+        this.kind = kind;
+    }
+    public Kind kind() { return kind; }
+    public int firstCapIndex() { return 1; }
+
+    @Override
+    public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
+        Multimap<Attribute, AttributeModifier> original = super.getAttributeModifiers(slot, stack);
+        if (kind != Kind.STAFF || slot != EquipmentSlot.MAINHAND) return original;
+        var attributes = ImmutableMultimap.<Attribute, AttributeModifier>builder().putAll(original);
+        if (!original.containsKey(Attributes.ATTACK_DAMAGE))
+            attributes.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID,
+                    "Staff weapon damage", 6.0, AttributeModifier.Operation.ADDITION));
+        if (!original.containsKey(Attributes.ATTACK_SPEED))
+            attributes.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID,
+                    "Staff attack speed", -2.4, AttributeModifier.Operation.ADDITION));
+        return attributes.build();
     }
 
     @Override
@@ -63,8 +90,15 @@ public class WandItem extends ModifiableItem {
     public static ToolStack toolWithAspectStats(ItemStack stack) {
         ToolStack tool = ToolStack.from(stack);
         var stats = stack.getTagElement("tic_stats");
-        if (ToolStack.isInitialized(stack) && stats != null && !stats.contains("tc_t:vis_capacity_aer")) {
+        if (ToolStack.isInitialized(stack) && ((WandItem) stack.getItem()).getToolDefinition().isDataLoaded()
+                && ((WandItem) stack.getItem()).kind() == Kind.STAFF && tool.getMaterials().size() == 4) {
+            var old = tool.getMaterials();
+            tool.setMaterials(MaterialNBT.of(old.get(0), old.get(2), old.get(3)));
+        }
+        if (ToolStack.isInitialized(stack) && ((WandItem) stack.getItem()).getToolDefinition().isDataLoaded() && stats != null
+                && (!stats.contains("tc_t:vis_capacity_aer") || stack.getOrCreateTag().getInt("tc_t_wand_stats_version") < 2)) {
             tool.rebuildStats();
+            stack.getOrCreateTag().putInt("tc_t_wand_stats_version", 2);
         }
         return tool;
     }
@@ -145,12 +179,15 @@ public class WandItem extends ModifiableItem {
         if (stack.hasCustomHoverName()) {
             return super.getName(stack);
         }
-        MaterialNBT materials = ToolStack.from(stack).getMaterials();
+        MaterialNBT materials = ToolStack.isInitialized(stack)
+                ? toolWithAspectStats(stack).getMaterials() : ToolStack.from(stack).getMaterials();
         if (materials.size() < 2) {
             return super.getName(stack);
         }
-        return Component.translatable("item.tc_t.wand.format",
-                partName("cap", materials.get(1).getVariant()),
+        int capIndex = firstCapIndex();
+        if (materials.size() <= capIndex) return super.getName(stack);
+        return Component.translatable("item.tc_t." + (kind == Kind.WAND ? "wand" : kind == Kind.SCEPTRE ? "sceptre" : "staff") + ".format",
+                partName("cap", materials.get(capIndex).getVariant()),
                 partName("rod", materials.get(0).getVariant()));
     }
 
@@ -211,7 +248,7 @@ public class WandItem extends ModifiableItem {
                 .append(Component.literal(String.valueOf(capacity)).withStyle(ChatFormatting.GOLD))
                 .append(" ")
                 .append(Component.translatable("tooltip.tc_t.wand.average_cost",
-                        WandCapStats.percent(WandToolStats.averageCost(stats))).withStyle(ChatFormatting.WHITE)));
+                        WandCapStats.percent(Math.max(0.1f, WandToolStats.averageCost(stats) - (kind == Kind.SCEPTRE ? 0.1f : 0f)))).withStyle(ChatFormatting.WHITE)));
 
         MutableComponent vis = Component.empty();
         Aspect[] aspects = Aspect.values();
